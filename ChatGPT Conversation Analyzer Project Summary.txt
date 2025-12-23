@@ -1,0 +1,88 @@
+ChatGPT Conversation Analyzer Project Summary
+Project Purpose
+Built tools for Robin (user's sister) to analyze and recover ChatGPT conversation exports. The December 2025 export (215MB, 743 conversations) was smaller than the August 2025 export (252MB, 782 conversations) due to OpenAI's 30-day auto-deletion when "Improve model for everyone" is disabled.
+
+Files in N:\claude-code\directed-tree-merger\
+conversation_analyzer.pyw - Main GUI app (~700 lines)
+
+Tantivy-powered full-text search (keeps stop words like "is", "the", "a")
+Branch navigation for conversation trees (ChatGPT conversations are directed trees with branches from edits/regenerations)
+Filter panel: User, Assistant, System, Reasoning, Tool, Code, Web Citations, Errors
+Display options: Node IDs, Model slug
+Local search within conversations (Next/Previous)
+Iterative DFS for branch finding (avoids Python's 1000-depth recursion limit)
+Color-coded message headers by category
+forest_merger_gui.pyw - GUI for comparing/merging conversation exports
+
+Shows conversations unique to PAST file (data loss detection)
+Sortable columns with date formatting
+Exports merged JSON
+forest_merger.py - CLI version of the merger
+
+scan_content_types.py - Standalone scanner
+
+Usage: python scan_content_types.py <conversations.json>
+Reports all content types found and whether they're handled
+Shows samples of unhandled types
+benchmark.py - Tantivy vs SQLite FTS5 comparison (Tantivy 2.2x faster)
+
+Robin_merged.json - Merged output with 856 unique conversations
+
+Key Data Structures
+ChatGPT Export Format:
+
+{
+  "title": "Conversation Title",
+  "conversation_id": "uuid",
+  "create_time": 1234567890.0,
+  "update_time": 1234567890.0,
+  "mapping": {
+    "node-uuid-1": {
+      "id": "node-uuid-1",
+      "parent": null,
+      "children": ["node-uuid-2"],
+      "message": {
+        "author": {"role": "user|assistant|system|tool"},
+        "content": {"content_type": "text|multimodal_text|...", "parts": [...]},
+        "create_time": 1234567890.0,
+        "metadata": {"model_slug": "gpt-4o", "reasoning_status": "..."}
+      }
+    }
+  }
+}
+
+Content Types Handled
+content_type	Description
+text	Standard text messages
+multimodal_text	Mixed content (text + images/audio)
+code	Code blocks
+execution_output	Code interpreter output
+thoughts	o3/o4 reasoning (array of {summary, content})
+reasoning_recap	"Thought for Xs" summary
+tether_quote	Web citations with domain/title/url
+system_error	Error messages
+tether_browsing_display	Browsing UI (usually empty, skipped)
+user_editable_context	Custom instructions (skipped)
+Reasoning Detection
+All OpenAI reasoning models unified via:
+
+# Check metadata first (works for o1, o3, o4-mini)
+if metadata.get('reasoning_status') in ('is_reasoning', 'reasoning_ended'):
+    return 'reasoning'
+# Then content_type (o3/o4-mini specific)
+if content_type in ('thoughts', 'reasoning_recap'):
+    return 'reasoning'
+
+Key Functions in conversation_analyzer.pyw
+get_message_category(msg) → Returns 'user', 'assistant', 'system', 'reasoning', 'tool', 'code', 'web_citation', 'error', or 'other'
+extract_text_from_content(content) → Extracts displayable text from any content type
+_find_all_branches(mapping) → Iterative DFS returning all root-to-leaf paths
+_should_show_message(msg) → Applies filter settings
+_display_branch() → Renders current branch with filters and display options
+Bugs Fixed During Development
+Recursion limit crash - Deep conversations (1500+ nodes) hit Python's limit. Fixed with iterative DFS using explicit stack.
+Empty conversations - Only handled content_type == 'text'. Fixed by adding multimodal_text, thoughts, etc.
+Tantivy API - QueryParser.for_index() doesn't exist. Use index.parse_query(query, ["text", "title"]) instead.
+Windows-Specific Notes
+.pyw extension runs with pythonw.exe (no console window)
+User had to fix file association: assoc .pyw=Python.NoConFile and ftype Python.NoConFile="path\to\pythonw.exe" "%1" %*
