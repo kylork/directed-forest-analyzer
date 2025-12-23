@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT Conversation Analyzer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: white;
+        }
+
+        /* Menu Bar */
+        .menu-bar {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 15px;
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .menu-item {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover {
+            background: #34495e;
+        }
+
+        /* Main Layout */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Search Frame */
+        .search-frame {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .search-frame h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .search-controls input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        .search-controls button {
+            padding: 6px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .search-controls button:hover {
+            background: #2980b9;
+        }
+
+        .search-controls button.clear {
+            background: #95a5a6;
+        }
+
+        .search-controls button.clear:hover {
+            background: #7f8c8d;
+        }
+
+        /* Conversation List */
+        .conversation-list {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .conversation-list h3 {
+            font-size: 14px;
+            padding: 10px;
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            color: #2c3e50;
+        }
+
+        .conv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .conv-table-container {
+            overflow: auto;
+            flex: 1;
+        }
+
+        .conv-table th {
+            background: #ecf0f1;
+            padding: 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 2px solid #bdc3c7;
+        }
+
+        .conv-table th:hover {
+            background: #dfe4e8;
+        }
+
+        .conv-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .conv-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .conv-table tr.selected {
+            background: #d4e6f1;
+        }
+
+        .conv-table tr {
+            cursor: pointer;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            padding: 10px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex-wrap: wrap;
+        }
+
+        .top-bar label {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .top-bar select, .top-bar input {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .top-bar select {
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .top-bar button {
+            padding: 5px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .top-bar button:hover {
+            background: #2980b9;
+        }
+
+        /* Filter Panel */
+        .filter-panel {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .filter-panel h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-row label {
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 70px;
+        }
+
+        .filter-row .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-row .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-row input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .filter-row span {
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Message Display */
+        .message-display {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .message-display h3 {
+            font-size: 14px;
+            padding: 10px;
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            color: #2c3e50;
+        }
+
+        .message-content {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .message-header {
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .message-header.user { color: #0066cc; }
+        .message-header.assistant { color: #006600; }
+        .message-header.system { color: #666666; font-style: italic; }
+        .message-header.reasoning { color: #996600; font-style: italic; }
+        .message-header.tool { color: #660066; }
+        .message-header.code { color: #006666; }
+        .message-header.web_citation { color: #0066aa; }
+        .message-header.error { color: #cc0000; }
+
+        .message-text {
+            margin-bottom: 15px;
+        }
+
+        .highlight {
+            background: #ffff00;
+            padding: 2px;
+        }
+
+        .node-id {
+            color: #999999;
+            font-size: 11px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            padding: 8px 15px;
+            background: #ecf0f1;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #555;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .modal-content button {
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background: #2980b9;
+        }
+
+        .modal-content input[type="file"] {
+            display: block;
+            margin: 10px 0;
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Bar -->
+        <div class="menu-bar">
+            <div class="menu-item" onclick="openFile()">File: Open conversations.json (Ctrl+O)</div>
+            <div class="menu-item" onclick="exportConversation()">Export Conversation</div>
+            <div class="menu-item" onclick="exportSearchResults()">Export Search Results</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <!-- Global Search -->
+                <div class="search-frame">
+                    <h3>Global Search</h3>
+                    <div class="search-controls">
+                        <input type="text" id="globalSearch" placeholder="Search across all conversations..." onkeypress="if(event.key==='Enter') doGlobalSearch()">
+                        <button onclick="doGlobalSearch()">Search</button>
+                        <button class="clear" onclick="clearSearch()">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Conversation List -->
+                <div class="conversation-list">
+                    <h3>Conversations</h3>
+                    <div class="conv-table-container">
+                        <table class="conv-table" id="convTable">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortConversations('title')">Title</th>
+                                    <th onclick="sortConversations('created')">Created</th>
+                                    <th onclick="sortConversations('modified')">Modified</th>
+                                    <th onclick="sortConversations('branches')">Branches</th>
+                                </tr>
+                            </thead>
+                            <tbody id="convTableBody">
+                                <tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">Open a conversations.json file to begin.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Top Bar -->
+                <div class="top-bar">
+                    <label>Branch:</label>
+                    <select id="branchSelect" onchange="onBranchSelect()">
+                        <option>No conversation selected</option>
+                    </select>
+
+                    <label>Find:</label>
+                    <input type="text" id="localSearch" placeholder="Search in current view..." onkeypress="if(event.key==='Enter') doLocalSearch()">
+                    <button onclick="findNext()">Next</button>
+                    <button onclick="findPrev()">Previous</button>
+                </div>
+
+                <!-- Filter Panel -->
+                <div class="filter-panel">
+                    <h3>Filters</h3>
+                    <div class="filter-row">
+                        <label>Roles:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterUser" checked onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterUser').click()">User</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterAssistant" checked onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterAssistant').click()">Assistant</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterSystem" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterSystem').click()">System</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterReasoning" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterReasoning').click()">Reasoning</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterTool" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterTool').click()">Tool</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <label>Content:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterCode" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterCode').click()">Code</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterWebCitation" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterWebCitation').click()">Web Citations</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="filterError" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('filterError').click()">Errors</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <label>Display:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showNodeId" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('showNodeId').click()">Node IDs</span>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showModel" onchange="onFilterChange()">
+                                <span onclick="document.getElementById('showModel').click()">Model</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Display -->
+                <div class="message-display">
+                    <h3>Messages</h3>
+                    <div class="message-content" id="messageContent">
+                        <div style="color: #999; text-align: center; padding: 20px;">
+                            Select a conversation to view messages
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            Open a conversations.json file to begin.
+        </div>
+    </div>
+
+    <!-- File input (hidden) -->
+    <input type="file" id="fileInput" accept=".json" onchange="handleFileSelect(event)">
+
+    <script>
+        // Global state
+        let conversations = {};
+        let allConversations = [];
+        let currentConvId = null;
+        let currentBranchPath = [];
+        let branches = [];
+        let searchResults = [];
+        let localSearchMatches = [];
+        let currentMatchIdx = -1;
+        let sortColumn = 'modified';
+        let sortReverse = true;
+
+        // Message category detection
+        function getMessageCategory(msg) {
+            if (!msg) return 'other';
+
+            const role = msg.author?.role || '';
+            const content = msg.content || {};
+            const contentType = content.content_type || '';
+            const metadata = msg.metadata || {};
+
+            // Check for reasoning
+            if (metadata.reasoning_status === 'is_reasoning' || metadata.reasoning_status === 'reasoning_ended') {
+                return 'reasoning';
+            }
+            if (contentType === 'thoughts' || contentType === 'reasoning_recap') {
+                return 'reasoning';
+            }
+
+            // Check content types
+            if (contentType === 'tether_quote') return 'web_citation';
+            if (contentType === 'system_error') return 'error';
+            if (contentType === 'code' || contentType === 'execution_output') return 'code';
+
+            // Check role
+            if (role === 'tool') return 'tool';
+            if (role === 'system') return 'system';
+            if (role === 'user') return 'user';
+            if (role === 'assistant') return 'assistant';
+
+            return 'other';
+        }
+
+        // Extract text from message content
+        function extractTextFromContent(content) {
+            const contentType = content.content_type;
+
+            if (contentType === 'text') {
+                const parts = content.parts || [];
+                return parts.filter(p => p).join(' ');
+            }
+
+            if (contentType === 'multimodal_text') {
+                const parts = content.parts || [];
+                const textParts = [];
+                for (const part of parts) {
+                    if (typeof part === 'string') {
+                        textParts.push(part);
+                    } else if (typeof part === 'object' && part !== null) {
+                        if (part.text) {
+                            textParts.push(part.text);
+                        } else if (part.content_type === 'image_asset_pointer') {
+                            textParts.push('[Image]');
+                        } else if (part.content_type === 'audio_asset_pointer') {
+                            textParts.push('[Audio]');
+                        } else if (part.content_type === 'audio_transcription') {
+                            textParts.push(part.text || '[Audio Transcription]');
+                        }
+                    }
+                }
+                return textParts.join(' ');
+            }
+
+            if (contentType === 'code') {
+                return content.text || '[Code]';
+            }
+
+            if (contentType === 'execution_output') {
+                const text = content.text || '';
+                return text ? `[Output]: ${text}` : '[Execution Output]';
+            }
+
+            if (contentType === 'thoughts') {
+                const thoughts = content.thoughts || [];
+                if (thoughts.length === 0) return '';
+                const parts = [];
+                for (const thought of thoughts) {
+                    const summary = thought.summary || '';
+                    const thoughtContent = thought.content || '';
+                    if (summary) parts.push(`[${summary}]`);
+                    if (thoughtContent) parts.push(thoughtContent);
+                }
+                return parts.length > 0 ? parts.join('\n') : '[Thinking...]';
+            }
+
+            if (contentType === 'reasoning_recap') {
+                const recap = content.content || '';
+                return recap ? `[${recap}]` : '';
+            }
+
+            if (contentType === 'tether_quote') {
+                const domain = content.domain || '';
+                const title = content.title || '';
+                const text = content.text || '';
+                const url = content.url || '';
+                const header = title || domain || url ? `[Citation: ${title || domain || url}]` : '[Citation]';
+                return text ? `${header}\n${text}` : header;
+            }
+
+            if (contentType === 'system_error') {
+                const name = content.name || 'Error';
+                const text = content.text || '';
+                return text ? `[Error: ${name}] ${text}` : `[Error: ${name}]`;
+            }
+
+            return '';
+        }
+
+        // File handling
+        function openFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            updateStatus(`Loading ${file.name}...`);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    conversations = {};
+                    allConversations = data;
+
+                    for (const conv of data) {
+                        conversations[conv.conversation_id] = conv;
+                    }
+
+                    updateStatus(`Loaded ${data.length} conversations.`);
+                    populateConversationList();
+                } catch (err) {
+                    alert(`Failed to load file: ${err.message}`);
+                    updateStatus('Error loading file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Conversation list population
+        function populateConversationList(filterConvIds = null) {
+            const tbody = document.getElementById('convTableBody');
+            tbody.innerHTML = '';
+
+            let convList = [];
+            for (const [convId, conv] of Object.entries(conversations)) {
+                if (filterConvIds && !filterConvIds.has(convId)) continue;
+
+                const title = conv.title || 'Untitled';
+                const createTime = conv.create_time || 0;
+                const updateTime = conv.update_time || 0;
+                const branchCount = countBranches(conv);
+
+                convList.push({
+                    conv_id: convId,
+                    title: title,
+                    create_time: createTime,
+                    update_time: updateTime,
+                    branches: branchCount,
+                    created_str: formatTimestamp(createTime),
+                    modified_str: formatTimestamp(updateTime)
+                });
+            }
+
+            // Sort
+            const keyMap = {
+                'title': c => c.title.toLowerCase(),
+                'created': c => c.create_time || 0,
+                'modified': c => c.update_time || 0,
+                'branches': c => c.branches
+            };
+            const sortKey = keyMap[sortColumn] || keyMap['modified'];
+            convList.sort((a, b) => {
+                const valA = sortKey(a);
+                const valB = sortKey(b);
+                if (sortReverse) {
+                    return valA > valB ? -1 : valA < valB ? 1 : 0;
+                } else {
+                    return valA < valB ? -1 : valA > valB ? 1 : 0;
+                }
+            });
+
+            // Populate table
+            if (convList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">No conversations found.</td></tr>';
+                return;
+            }
+
+            for (const conv of convList) {
+                const row = tbody.insertRow();
+                row.dataset.convId = conv.conv_id;
+                row.onclick = () => onConversationSelect(conv.conv_id);
+
+                row.insertCell(0).textContent = conv.title;
+                row.insertCell(1).textContent = conv.created_str;
+                row.insertCell(2).textContent = conv.modified_str;
+                row.insertCell(3).textContent = conv.branches;
+            }
+        }
+
+        function countBranches(conv) {
+            const mapping = conv.mapping || {};
+            let leaves = 0;
+            for (const node of Object.values(mapping)) {
+                const children = node.children || [];
+                if (children.length === 0) leaves++;
+            }
+            return Math.max(1, leaves);
+        }
+
+        function formatTimestamp(ts) {
+            if (!ts) return '';
+            try {
+                const date = new Date(ts * 1000);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).replace(',', '');
+            } catch {
+                return '';
+            }
+        }
+
+        // Sorting
+        function sortConversations(column) {
+            if (sortColumn === column) {
+                sortReverse = !sortReverse;
+            } else {
+                sortColumn = column;
+                sortReverse = (column === 'modified' || column === 'created' || column === 'branches');
+            }
+
+            if (searchResults.length > 0) {
+                const convIds = new Set(searchResults.map(r => r.conv_id));
+                populateConversationList(convIds);
+            } else {
+                populateConversationList();
+            }
+        }
+
+        // Conversation selection
+        function onConversationSelect(convId) {
+            // Remove previous selection
+            const rows = document.querySelectorAll('#convTableBody tr');
+            rows.forEach(r => r.classList.remove('selected'));
+
+            // Add new selection
+            const selectedRow = document.querySelector(`#convTableBody tr[data-conv-id="${convId}"]`);
+            if (selectedRow) selectedRow.classList.add('selected');
+
+            currentConvId = convId;
+            loadConversation(convId);
+        }
+
+        // Load conversation and branches
+        function loadConversation(convId) {
+            const conv = conversations[convId];
+            if (!conv) return;
+
+            const mapping = conv.mapping || {};
+            branches = findAllBranches(mapping);
+
+            const branchSelect = document.getElementById('branchSelect');
+            branchSelect.innerHTML = '';
+
+            for (let i = 0; i < branches.length; i++) {
+                const path = branches[i];
+                const preview = getBranchPreview(mapping, path);
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Branch ${i + 1}: ${preview}`;
+                branchSelect.appendChild(option);
+            }
+
+            if (branches.length > 0) {
+                branchSelect.selectedIndex = 0;
+                currentBranchPath = branches[0];
+                displayBranch();
+            }
+        }
+
+        function findAllBranches(mapping) {
+            // Find root
+            let rootId = null;
+            for (const [nodeId, node] of Object.entries(mapping)) {
+                if (!node.parent) {
+                    rootId = nodeId;
+                    break;
+                }
+            }
+
+            if (!rootId) return [];
+
+            const branches = [];
+            const stack = [[rootId, []]];
+
+            while (stack.length > 0) {
+                const [nodeId, path] = stack.pop();
+                const currentPath = [...path, nodeId];
+                const node = mapping[nodeId] || {};
+                const children = node.children || [];
+
+                if (children.length === 0) {
+                    branches.push(currentPath);
+                } else {
+                    for (let i = children.length - 1; i >= 0; i--) {
+                        stack.push([children[i], currentPath]);
+                    }
+                }
+            }
+
+            return branches;
+        }
+
+        function getBranchPreview(mapping, path) {
+            for (const nodeId of path) {
+                const node = mapping[nodeId] || {};
+                const msg = node.message;
+                if (msg && msg.author?.role === 'assistant') {
+                    const content = msg.content || {};
+                    const text = extractTextFromContent(content);
+                    if (text) {
+                        return text.length > 60 ? text.substring(0, 60) + '...' : text;
+                    }
+                }
+            }
+            return '(empty)';
+        }
+
+        function onBranchSelect() {
+            const branchSelect = document.getElementById('branchSelect');
+            const idx = parseInt(branchSelect.value);
+            if (idx >= 0 && idx < branches.length) {
+                currentBranchPath = branches[idx];
+                displayBranch();
+            }
+        }
+
+        // Message filtering
+        function shouldShowMessage(msg) {
+            const category = getMessageCategory(msg);
+
+            const filters = {
+                user: document.getElementById('filterUser').checked,
+                assistant: document.getElementById('filterAssistant').checked,
+                system: document.getElementById('filterSystem').checked,
+                reasoning: document.getElementById('filterReasoning').checked,
+                tool: document.getElementById('filterTool').checked,
+                code: document.getElementById('filterCode').checked,
+                web_citation: document.getElementById('filterWebCitation').checked,
+                error: document.getElementById('filterError').checked
+            };
+
+            if (category === 'user' && !filters.user) return false;
+            if (category === 'assistant' && !filters.assistant) return false;
+            if (category === 'system' && !filters.system) return false;
+            if (category === 'reasoning' && !filters.reasoning) return false;
+            if (category === 'tool' && !filters.tool) return false;
+            if (category === 'code' && !filters.code) return false;
+            if (category === 'web_citation' && !filters.web_citation) return false;
+            if (category === 'error' && !filters.error) return false;
+
+            return true;
+        }
+
+        function onFilterChange() {
+            displayBranch();
+        }
+
+        // Display branch
+        function displayBranch() {
+            const messageContent = document.getElementById('messageContent');
+            messageContent.innerHTML = '';
+
+            if (!currentConvId || !conversations[currentConvId]) {
+                messageContent.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">No conversation selected</div>';
+                return;
+            }
+
+            const conv = conversations[currentConvId];
+            const mapping = conv.mapping || {};
+            const showNodeId = document.getElementById('showNodeId').checked;
+            const showModel = document.getElementById('showModel').checked;
+
+            for (const nodeId of currentBranchPath) {
+                const node = mapping[nodeId] || {};
+                const msg = node.message;
+
+                if (!msg) continue;
+                if (!shouldShowMessage(msg)) continue;
+
+                const content = msg.content || {};
+                const text = extractTextFromContent(content);
+                if (!text.trim()) continue;
+
+                const category = getMessageCategory(msg);
+                const role = msg.author?.role || 'unknown';
+
+                // Determine display role
+                let displayRole = role.charAt(0).toUpperCase() + role.slice(1);
+                if (category === 'reasoning') displayRole = 'Reasoning';
+                else if (category === 'tool') displayRole = 'Tool';
+                else if (category === 'code') displayRole = 'Code';
+                else if (category === 'web_citation') displayRole = 'Citation';
+                else if (category === 'error') displayRole = 'Error';
+
+                // Build header
+                const createTime = msg.create_time;
+                const timeStr = createTime ? ` (${formatTimestamp(createTime)})` : '';
+
+                let modelStr = '';
+                if (showModel) {
+                    const modelSlug = msg.metadata?.model_slug || '';
+                    if (modelSlug) modelStr = ` [${modelSlug}]`;
+                }
+
+                let nodeStr = '';
+                if (showNodeId) nodeStr = ` Node: ${nodeId}`;
+
+                // Create message elements
+                const headerDiv = document.createElement('div');
+                headerDiv.className = `message-header ${category}`;
+                headerDiv.textContent = `--- ${displayRole}${timeStr}${modelStr}${nodeStr} ---`;
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'message-text';
+                textDiv.textContent = text;
+
+                messageContent.appendChild(headerDiv);
+                messageContent.appendChild(textDiv);
+            }
+
+            localSearchMatches = [];
+            currentMatchIdx = -1;
+        }
+
+        // Global search (simple text search)
+        function doGlobalSearch() {
+            const query = document.getElementById('globalSearch').value.trim().toLowerCase();
+            if (!query) return;
+
+            updateStatus('Searching...');
+            searchResults = [];
+
+            for (const conv of allConversations) {
+                const convId = conv.conversation_id;
+                const title = (conv.title || '').toLowerCase();
+                const mapping = conv.mapping || {};
+
+                let hasMatch = false;
+
+                // Search in title
+                if (title.includes(query)) {
+                    hasMatch = true;
+                }
+
+                // Search in messages
+                if (!hasMatch) {
+                    for (const node of Object.values(mapping)) {
+                        const msg = node.message;
+                        if (msg && msg.content) {
+                            const text = extractTextFromContent(msg.content).toLowerCase();
+                            if (text.includes(query)) {
+                                hasMatch = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (hasMatch) {
+                    searchResults.push({
+                        conv_id: convId,
+                        title: conv.title || 'Untitled'
+                    });
+                }
+            }
+
+            if (searchResults.length > 0) {
+                const convIds = new Set(searchResults.map(r => r.conv_id));
+                populateConversationList(convIds);
+                updateStatus(`Found ${searchResults.length} matching conversations.`);
+            } else {
+                populateConversationList(new Set());
+                updateStatus('No results found.');
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('globalSearch').value = '';
+            searchResults = [];
+            populateConversationList();
+            updateStatus(`Showing all ${allConversations.length} conversations.`);
+        }
+
+        // Local search
+        function doLocalSearch() {
+            const query = document.getElementById('localSearch').value.trim();
+            if (!query) return;
+
+            const messageContent = document.getElementById('messageContent');
+            const text = messageContent.textContent;
+
+            localSearchMatches = [];
+            const lowerQuery = query.toLowerCase();
+            const lowerText = text.toLowerCase();
+
+            let pos = 0;
+            while ((pos = lowerText.indexOf(lowerQuery, pos)) !== -1) {
+                localSearchMatches.push(pos);
+                pos += query.length;
+            }
+
+            if (localSearchMatches.length > 0) {
+                currentMatchIdx = 0;
+                highlightMatches(query);
+                updateStatus(`Found ${localSearchMatches.length} matches. Use Next/Previous to navigate.`);
+            } else {
+                updateStatus('No matches found in current view.');
+            }
+        }
+
+        function highlightMatches(query) {
+            // Re-render with highlights
+            displayBranch();
+            const messageContent = document.getElementById('messageContent');
+            const html = messageContent.innerHTML;
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            messageContent.innerHTML = html.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function findNext() {
+            if (localSearchMatches.length === 0) {
+                doLocalSearch();
+                return;
+            }
+            currentMatchIdx = (currentMatchIdx + 1) % localSearchMatches.length;
+            scrollToMatch();
+        }
+
+        function findPrev() {
+            if (localSearchMatches.length === 0) return;
+            currentMatchIdx = (currentMatchIdx - 1 + localSearchMatches.length) % localSearchMatches.length;
+            scrollToMatch();
+        }
+
+        function scrollToMatch() {
+            const highlights = document.querySelectorAll('.highlight');
+            if (highlights[currentMatchIdx]) {
+                highlights[currentMatchIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Export functions
+        function exportConversation() {
+            if (!currentConvId) {
+                alert('Select a conversation first.');
+                return;
+            }
+
+            const conv = conversations[currentConvId];
+            const title = conv.title || 'Untitled';
+            const mapping = conv.mapping || {};
+
+            let output = `# ${title}\n\n`;
+
+            for (const nodeId of currentBranchPath) {
+                const node = mapping[nodeId] || {};
+                const msg = node.message;
+                if (!msg) continue;
+
+                const role = msg.author?.role || 'unknown';
+                const content = msg.content || {};
+                const text = extractTextFromContent(content);
+                if (text.trim()) {
+                    output += `## ${role.charAt(0).toUpperCase() + role.slice(1)}\n\n${text}\n\n`;
+                }
+            }
+
+            downloadText(output, `${title}.txt`);
+            updateStatus(`Exported conversation to ${title}.txt`);
+        }
+
+        function exportSearchResults() {
+            if (searchResults.length === 0) {
+                alert('Perform a search first.');
+                return;
+            }
+
+            const query = document.getElementById('globalSearch').value;
+            let output = `Search Results: ${query}\n${'='.repeat(50)}\n\n`;
+
+            for (const r of searchResults) {
+                output += `${r.title}\n`;
+                output += `ID: ${r.conv_id}\n`;
+                output += '-'.repeat(30) + '\n\n';
+            }
+
+            downloadText(output, 'search_results.txt');
+            updateStatus(`Exported ${searchResults.length} search results.`);
+        }
+
+        function downloadText(text, filename) {
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Status updates
+        function updateStatus(message) {
+            document.getElementById('statusBar').textContent = message;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                openFile();
+            }
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('globalSearch').focus();
+            }
+        });
+    </script>
+</body>
+</html>
